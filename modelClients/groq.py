@@ -15,9 +15,9 @@ COMMANDS = {
 2. Maintain the original structure and formatting of the text.
 3. If any words or phrases are unclear, indicate this with [unclear] in your transcription.
 Provide only the transcription without any additional comments or references.""",
-    "Identify Language": "Identify the language of text in the image.",
+    "Help me solve": "Identify text in the given image first. Using the trancription text help me solve the problem in the image. Provide a step-by-step solution. Provide the code in Python for the solution.",
     "Translate to English": "As an Visual Translator, translate the text in the image to English.",
-    "Describe Image": "Describe the contents of the image in detail.",
+    "Describe Image": "Identify and transcribe any text/code/handwritten in the given image. Now refer to the text (if present) and image to describe the contents of the image in detail.",
 }
 
 def send_to_groq(encoded_image, command_key):
