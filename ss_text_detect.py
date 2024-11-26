@@ -1,6 +1,7 @@
 import time
 import os
 from queue import Queue
+from threading import Lock
 
 from pynput import keyboard
 import pyperclip
@@ -42,11 +43,16 @@ def run_model_command(cmd_idx, image):
 def main():
     # test_executability()
     
+    signal_lock = Lock()
     q = Queue()
     def start_ui_signal():
-        q.put("start")
+        if signal_lock.acquire(blocking=False):
+            q.put("start")
+            signal_lock.release()
     def end_ui_signal():
-        q.put("end")
+        if signal_lock.acquire(blocking=False):
+            q.put("end")
+            signal_lock.release()
     keyboard_mapping = {
         '<cmd>+<shift>+9': start_ui_signal,
         '<cmd>+<shift>+0': end_ui_signal,
@@ -57,11 +63,13 @@ def main():
     while True:
         if not q.empty():
             if q.get() == "start":
-                app = ScreenTextTaskApp(SUPPORTED_COMMANDS, run_model_command)
-                app.mainloop()
+                with signal_lock:
+                    app = ScreenTextTaskApp(SUPPORTED_COMMANDS, run_model_command)
+                    app.mainloop()
             else:
                 break
-        time.sleep(0.1)
+        else:
+            time.sleep(0.1)
     hotkeyListener.stop()
     
 

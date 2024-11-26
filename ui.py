@@ -26,7 +26,7 @@ class ScreenTextTaskApp:
         # Turn off the window shadow
         # self.master.wm_attributes("-transparent", True)
         # Set the root window background color to a transparent color
-        self.master.config(bg='systemTransparent')
+        # self.master.config(bg='systemTransparent')
         
         self.master.focus_force()
         # Hide the root window drag bar and close button
