@@ -2,6 +2,7 @@ import time
 import os
 from queue import Queue
 from threading import Lock
+from multiprocessing import Process
 
 from pynput import keyboard
 import pyperclip
@@ -17,6 +18,8 @@ if (os.getenv("GROQ_API_KEY") is not None):
 else:
     SELECTED_BACKEND = "ollama"
 
+# SELECTED_BACKEND = "MOCK"
+
 if SELECTED_BACKEND == "groq":
     from modelClients.groq import send_to_groq, COMMANDS
     send_to_model = send_to_groq
@@ -25,6 +28,9 @@ elif SELECTED_BACKEND == "ollama":
     from modelClients.ollama import send_to_ollama, COMMANDS
     send_to_model = send_to_ollama
     SUPPORTED_COMMANDS = list(COMMANDS.keys())
+elif SELECTED_BACKEND == "MOCK":
+    send_to_model = lambda x, y: "MOCK_RESPONSE"
+    SUPPORTED_COMMANDS = ["MOCK_COMMAND"]
 else:
     raise ValueError("Invalid backend selected with `SELECTED_BACKEND`. Please check supported backends.")
 
@@ -39,6 +45,10 @@ def run_model_command(cmd_idx, image):
     # Copy the response to the clipboard
     pyperclip.copy(response)
 
+
+def run_ui():
+    app = ScreenTextTaskApp(SUPPORTED_COMMANDS, run_model_command)
+    app.mainloop()
     
 def main():
     # test_executability()
@@ -64,8 +74,9 @@ def main():
         if not q.empty():
             if q.get() == "start":
                 with signal_lock:
-                    app = ScreenTextTaskApp(SUPPORTED_COMMANDS, run_model_command)
-                    app.mainloop()
+                    p = Process(target=run_ui)
+                    p.start()
+                    p.join()
             else:
                 break
         else:
