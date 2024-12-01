@@ -100,12 +100,14 @@ class ScreenTextTaskApp:
         display_image_width = int(cropped_image.width * (self.screen_width / self.image.width))
         display_image_height = int(cropped_image.height * (self.screen_height / self.image.height))
         
-        
-        window_width = min(int(display_image_width + 50), self.window_width)
+        window_width = max(min(int(display_image_width + 50), self.window_width), 300)
         window_height = min(int(display_image_height + 50), self.window_height) + len(self.supported_commands) * 50
         padding_width = int(self.screen_width/2 - window_width/2)
         padding_height = int(self.screen_height/2 - window_height/2)
         self.master.geometry(f"{window_width}x{window_height}+{padding_width}+{padding_height}")
+        
+        button = tk.Button(self.master, text="Retry Selection", command=self.render_canvas_display)
+        button.pack(pady=3, padx=3)
 
         def get_command_callback(cmd_idx):
             def on_command_click():
