@@ -9,7 +9,8 @@ import pyperclip
 
 from dotenv import load_dotenv
 
-from utils import image_pil_to_base64
+from pushbullet import PushbulletWrapper, handle_push
+from utils import test_executability, image_pil_to_base64
 from ui import ScreenTextTaskApp
 
 load_dotenv()
@@ -45,14 +46,25 @@ def run_model_command(cmd_idx, image):
     # Copy the response to the clipboard
     pyperclip.copy(response)
 
+def run_pushbullet_in_background():
+    pb_config_path = os.getenv("PUSHBULLET_CONFIG_PATH")
+    if pb_config_path is None:
+        raise ValueError("PUSHBULLET_CONFIG_PATH not set in environment variables.")
+    return PushbulletWrapper(config_path=pb_config_path).listen_push_notifications(handle_push)
 
 def run_ui():
     app = ScreenTextTaskApp(SUPPORTED_COMMANDS, run_model_command)
     app.mainloop()
     
 def main():
+    # Useful for Debugging environment changes
     # test_executability()
+    # exit()
     
+    # Start the Pushbullet listener in the background
+    pb_thread = run_pushbullet_in_background()
+    
+    # Start the Hotkey listener with message passing
     signal_lock = Lock()
     q = Queue()
     def start_ui_signal():
@@ -70,6 +82,7 @@ def main():
     hotkeyListener = keyboard.GlobalHotKeys(keyboard_mapping)
     hotkeyListener.start()
     
+    # Wait for the signal to trigger UI launch
     while True:
         if not q.empty():
             if q.get() == "start":
@@ -80,7 +93,10 @@ def main():
             else:
                 break
         else:
-            time.sleep(0.1)
+            time.sleep(0.2)
+    
+    # Cleanup tasks
+    pb_thread.stop()
     hotkeyListener.stop()
     
 
