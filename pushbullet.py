@@ -12,7 +12,7 @@ import pyperclip  # Ensure you have this library installed
 
 from typing import Callable
 
-from utils import copy_image_to_clipboard
+from utils import copy_image_to_clipboard, log
 
 # Docs: https://docs.pushbullet.com/
 
@@ -56,37 +56,33 @@ class PushbulletWrapper:
         response = requests.get('https://api.pushbullet.com/v2/devices', headers=headers)
         response.raise_for_status()
         return response.json().get('devices', [])
-
-    def listen_push_notifications(self, callback: Callable):
-        def listener():
-            headers = {'Access-Token': self.api_key}
-            url = 'https://api.pushbullet.com/v2/pushes'
-            last_timestamp = time.time()
-            while True:
-                params = {'modified_after': last_timestamp, 'active': 'true', 'limit': 10}
-                response = requests.get(url, headers=headers, params=params)
-                if response.status_code == 200:
-                    pushes = response.json().get('pushes', [])
-                    for push in reversed(pushes):
-                        if push.get('target_device_iden') == self.device['iden']:
-                            callback(push)
-                            last_timestamp = push.get('modified')
-                time.sleep(2)  # Polling
-
-        thread = threading.Thread(target=listener, daemon=True)
-        thread.start()
-        return thread
+    
+    def listen(self, callback: Callable):
+        headers = {'Access-Token': self.api_key}
+        url = 'https://api.pushbullet.com/v2/pushes'
+        last_timestamp = time.time()
+        while True:
+            params = {'modified_after': last_timestamp, 'active': 'true', 'limit': 10}
+            response = requests.get(url, headers=headers, params=params)
+            if response.status_code == 200:
+                pushes = response.json().get('pushes', [])
+                for push in reversed(pushes):
+                    if push.get('target_device_iden') == self.device['iden']:
+                        callback(push)
+                        last_timestamp = push.get('modified')
+            time.sleep(2)  # Polling
+        return None
 
 def handle_push(push):
     push_type = push.get('type')
     if push_type == 'note':
         body = push.get('body', '')
         pyperclip.copy(body)
-        print(f"Note copied to clipboard: {body}")
+        log(f"Note copied to clipboard: {body}")
     elif push_type == 'link':
         url = push.get('url', '')
         webbrowser.open(url)
-        print(f"Link opened in browser: {url}")
+        log(f"Link opened in browser: {url}")
     elif push_type == 'file':
         file_url = push.get('file_url', '')
         response = requests.get(file_url, stream=True)
@@ -98,16 +94,16 @@ def handle_push(push):
             if push.get('file_type', '').startswith('image/'):
                 # Copy the image to clipboard
                 copy_image_to_clipboard(tmp_file_path)
-                print(f"Image copied to clipboard!")
+                log(f"Image copied to clipboard!")
             else:
                 # Copy the file to downloads folder
                 file_name = push.get('file_name', 'downloaded_file')
                 downloads_path = os.path.join(os.path.expanduser('~/Downloads'), file_name)
                 shutil.copy(tmp_file_path, downloads_path)
-                print(f"File downloaded: {downloads_path}")
+                log(f"File downloaded: {downloads_path}")
             os.remove(tmp_file_path)
         else:
-            print(f"Failed to get image: {file_url}")
+            log(f"Failed to get image: {file_url}")
 
 # pb = PushbulletWrapper()
 # pb_thread = pb.listen_push_notifications(handle_push)
