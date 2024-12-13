@@ -5,7 +5,7 @@ import tkinter as tk
 from tkinter import Canvas
 from PIL import ImageTk, Image
 
-from utils import log
+import logger
 
 class ScreenTextTaskApp:
     def __init__(self, supported_commands, command_callback):
@@ -113,7 +113,7 @@ class ScreenTextTaskApp:
 
         def get_command_callback(cmd_idx):
             def on_command_click():
-                log(f"Running ScreenTask: {self.supported_commands[cmd_idx]}")
+                logger.log(f"Running ScreenTask: {self.supported_commands[cmd_idx]}")
                 self.clear_widgets()
                 self.master.title("Running...")
                 self.master.geometry(f"300x0+{int(self.screen_width/2 - 300/2)}+{int(self.screen_height/2 - 0/2)}")

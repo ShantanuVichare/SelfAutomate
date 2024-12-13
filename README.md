@@ -16,23 +16,19 @@
    GROQ_API_KEY=<your_key>
    ```
 
-## Instructions for setting up MacOS Automate task using keyboard shortcut trigger
+5. (Optional) If you want to use Pushbullet features, set `PUSHBULLET_CONFIG_PATH` environment variable with a path to a json file (file may not exist initially, but its parent directory should).
+6. (Optional) If you want to log temporary and runtime files to particular path, set `LOG_DIR` environment variable. (Default path will be set to `$HOME/.self_dev`)
 
-1. In Automator app, create an "Application" with the action "Run Shell Script"
-2. Set the shell script to use `/bin/bash` and add command as follows:
+## Running context
+
+1. The script can be executed via the following bash command:
 
    ```bash
-   /path/to/your/environment/bin/python /path/to/SelfAutomate/ss_text_detect.py
+   /path/to/your/environment/bin/python /path/to/SelfAutomate/run.py
    ```
 
-3. In Automator app, create a "Quick Action" and set "Workflow receives `no input` in `any application`"
-4. Add an action "Launch Application" and Select the above created application.
-5. In System Settings, configure "Keyboard Shortcuts". Look for "Services" > "General" > `Your Quick Action Name` and set your preferred key combination.
+2. Alternatively, you can run it in background with its output redirected. For example:
 
-## Instructions for setting up Windows PowerToys task using keyboard shortcut trigger
-
-Reference: https://learn.microsoft.com/en-us/windows/powertoys/keyboard-manager#remap-a-shortcut-to-start-an-app
-
-1. In PowerToys, under the Keyboard Manager utility, map a shortcut to "Start App".
-2. Under the "App" field, paste the path to your Python binary (`/path/to/your/environment/bin/python`).
-3. Under the "Args" field, paste the path to the repo script (`/path/to/SelfAutomate/ss_text_detect.py`).
+   ```bash
+   /path/to/your/environment/bin/python /path/to/SelfAutomate/run.py >> $LOG_DIR/sa.shell.log 2>&1 &
+   ```

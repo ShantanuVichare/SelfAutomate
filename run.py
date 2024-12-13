@@ -10,7 +10,8 @@ import pyperclip
 from dotenv import load_dotenv
 
 from pushbullet import PushbulletWrapper, handle_push
-from utils import test_executability, log, image_pil_to_base64
+from utils import image_pil_to_base64
+import logger
 from ui import ScreenTextTaskApp
 
 load_dotenv()
@@ -49,10 +50,11 @@ def run_model_command(cmd_idx, image):
 
 def run_pushbullet():
     pb_config_path = os.getenv("PUSHBULLET_CONFIG_PATH")
-    if pb_config_path is None:
-        raise ValueError("PUSHBULLET_CONFIG_PATH not set in environment variables.")
-    pb = PushbulletWrapper(config_path=pb_config_path)
-    pb.listen(handle_push)
+    if pb_config_path is not None:
+        pb = PushbulletWrapper(config_path=pb_config_path)
+        pb.listen(handle_push)
+    else:
+        print("Warning: PUSHBULLET_CONFIG_PATH not set in environment variables. Skipping Pushbullet startup!")
 
 def run_ui():
     app = ScreenTextTaskApp(SUPPORTED_COMMANDS, run_model_command)
@@ -60,8 +62,10 @@ def run_ui():
     
 def main():
     # Useful for Debugging environment changes
-    # test_executability()
+    # logger.test_executability()
     # exit()
+    
+    logger.mark_process_run()
     
     # Init processes
     pb_process = Process(target=run_pushbullet)
@@ -89,7 +93,7 @@ def main():
         while True:
             if not q.empty():
                 signal = q.get()
-                log(f"Received signal: {signal}")
+                logger.log(f"Received signal: {signal}")
                 if signal == "start_ui":
                     if ui_process.is_alive():
                         ui_process.terminate()
@@ -103,10 +107,12 @@ def main():
             else:
                 time.sleep(0.2)
     finally:
-        log("Terminating SelfAutomate")
-        pb_process.terminate()
-        ui_process.terminate()
+        logger.log("Terminating SelfAutomate")
+        if pb_process and pb_process.is_alive(): pb_process.terminate()
+        if ui_process and ui_process.is_alive(): ui_process.terminate()
         hotkeyListener.stop()
+        logger.mark_process_end()
+        logger.log("Termination successful!")
     
 
 if __name__ == "__main__":

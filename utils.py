@@ -1,11 +1,11 @@
 
-from datetime import datetime
-import os
 import subprocess
 import platform
 
 import base64
 from io import BytesIO
+
+import logger
 
 def image_pil_to_base64(image_pil):
     buffered = BytesIO()
@@ -26,23 +26,5 @@ def copy_image_to_clipboard(file_path):
         else:
             raise NotImplementedError(f"Unsupported OS: {system}")
     except Exception as e:
-        log(f"Failed to copy file to clipboard: {e}")
+        logger.log(f"Failed to copy file to clipboard: {e}")
 
-def test_executability():
-    pid = str(os.getpid())
-    home_directory = os.path.expanduser("~")
-    file_path = os.path.join(home_directory, "text_detect_test.log")
-    with open(file_path, "a") as file:
-        file.write(f"PID: {pid}\n")
-        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        file.write(f"Current time: {current_time}\n")
-        current_dir = os.getcwd()
-        file.write(f"Current directory: {current_dir}\n")
-        
-def log(*args):
-    pid = str(os.getpid())
-    home_directory = os.path.expanduser("~")
-    file_path = os.path.join(home_directory, "self_automate.log")
-    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    with open(file_path, "a") as file:
-        print(f"[{pid}][{current_time}]:", *args, file=file)
