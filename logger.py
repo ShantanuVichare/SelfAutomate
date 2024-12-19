@@ -17,18 +17,20 @@ EXECUTABILITY_FILE = "text_detect_test.log"
 PROCESS_LOG_FILE = "process.log"
 
 def mark_process_run():
-    if os.path.exists(RUNNING_FILE):
-        with open(RUNNING_FILE, "r") as f:
+    file_path = os.path.join(LOG_DIR, RUNNING_FILE)
+    if os.path.exists(file_path):
+        with open(file_path, "r") as f:
             lines = f.readlines()
         pid = lines[0].split()[-1]
         raise Exception(f"SelfAutomate is already running. PID: {pid}")
     else:
-        with open(RUNNING_FILE, "w") as f:
+        with open(file_path, "w") as f:
             f.write(f"Running SelfAutomate with PID: {os.getpid()}")
 
 def mark_process_end():
-    if os.path.exists(RUNNING_FILE):
-        os.remove(RUNNING_FILE)
+    file_path = os.path.join(LOG_DIR, RUNNING_FILE)
+    if os.path.exists(file_path):
+        os.remove(file_path)
     else:
         raise Exception("No running instance found to end.")
 
