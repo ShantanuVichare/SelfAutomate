@@ -1,6 +1,7 @@
 from datetime import datetime
 import os
 import json
+from traceback import print_exception
 
 # Variables for logging
 PID = str(os.getpid())
@@ -48,6 +49,13 @@ def log(*args):
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     with open(file_path, "a") as file:
         print(f"[{PID}][{current_time}]:", *args, file=file)
+
+def log_error(exception: Exception, *args):
+    file_path = os.path.join(LOG_DIR, PROCESS_LOG_FILE)
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with open(file_path, "a") as file:
+        print(f"[{PID}][{current_time}][ERROR]:", *args, file=file)
+        print_exception(exception, file=file)
 
 def access_runtime_config(config_file_path, config: dict = None) -> dict:
     file_path = os.path.join(LOG_DIR, config_file_path)

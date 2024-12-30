@@ -35,7 +35,7 @@ class PushbulletWrapper:
             self.api_key = input("Enter your Pushbullet API key: ")
         if not self.device:
             self.device = self.create_device()
-        self.save_config()
+            self.save_config()
 
     def save_config(self):
         with open(self.config_path, 'w') as f:
@@ -67,22 +67,30 @@ class PushbulletWrapper:
         logger.access_runtime_config("pushbullet_last_push_timestamp.json", {'ts': ts} )
         return ts
     
-    def listen(self, callback: Callable):
+    def listen(self, callback: Callable, wait_interval=60*60*12):
         headers = {'Access-Token': self.api_key}
         url = 'https://api.pushbullet.com/v2/pushes'
-        last_timestamp = self.access_last_push_timestamp()
-        while True:
-            params = {'modified_after': last_timestamp, 'active': 'true', 'limit': 10}
-            response = requests.get(url, headers=headers, params=params)
-            if response.status_code == 200:
-                pushes = response.json().get('pushes', [])
-                if pushes:
-                    for push in reversed(pushes):
-                        if push.get('target_device_iden') == self.device['iden']:
-                            callback(push)
-                            last_timestamp = push.get('modified')
-                    self.access_last_push_timestamp(last_timestamp)
-            time.sleep(1)  # Polling
+        try:
+            last_timestamp = self.access_last_push_timestamp()
+            loop_time = time.time()
+            # Wait for interval since the last timestamp - 12 hrs by default
+            while time.time()-loop_time < wait_interval:
+                params = {'modified_after': last_timestamp, 'active': 'true', 'limit': 10}
+                response = requests.get(url, headers=headers, params=params)
+                if response.status_code == 200:
+                    pushes = response.json().get('pushes', [])
+                    if pushes:
+                        for push in reversed(pushes):
+                            if push.get('target_device_iden') == self.device['iden']:
+                                callback(push)
+                                last_timestamp = push.get('modified')
+                        self.access_last_push_timestamp(last_timestamp)
+                        loop_time = time.time()
+                time.sleep(3)  # Polling
+        except Exception as e:
+            logger.log_error(e, f"Error in Pushbullet listen: {e}")
+        finally:
+            logger.log("Pushbullet listen ended!")
         return None
 
 def handle_push(push):

@@ -52,7 +52,7 @@ def run_pushbullet():
     pb_config_path = os.getenv("PUSHBULLET_CONFIG_PATH")
     if pb_config_path is not None:
         pb = PushbulletWrapper(config_path=pb_config_path)
-        pb.listen(handle_push)
+        pb.listen(handle_push, 60)
     else:
         print("Warning: PUSHBULLET_CONFIG_PATH not set in environment variables. Skipping Pushbullet startup!")
 
@@ -60,33 +60,54 @@ def run_ui():
     app = ScreenTextTaskApp(SUPPORTED_COMMANDS, run_model_command)
     app.mainloop()
     
+    
+def CreateProcess(name):
+    match name:
+        case "pb":
+            return Process(target=run_pushbullet, name=name)
+        case "ui":
+            return Process(target=run_ui, name=name)
+        case _:
+            raise ValueError(f"Unknown process identifier name: {name}")
+        
+def ResetProcess(proc):
+    if proc.is_alive():
+        proc.terminate()
+    if proc.pid:
+        proc = CreateProcess(proc.name)
+    return proc
+    
 def main():
     # Useful for Debugging environment changes
     # logger.test_executability()
     # exit()
     
     logger.mark_process_run()
+    logger.log("Starting SelfAutomate")
     
     # Init processes
-    pb_process = Process(target=run_pushbullet)
-    ui_process = Process(target=run_ui)
+    pb_process = CreateProcess("pb")
+    ui_process = CreateProcess("ui")
     
     
     # Start the Hotkey listener with message passing
     q = Queue()
+    def start_pb_signal():
+        q.put("start_pb")
     def start_ui_signal():
         q.put("start_ui")
-    def end_ui_signal():
+    def end_signal():
         q.put("end")
     hotkeyListener = keyboard.GlobalHotKeys({
+        '<cmd>+<shift>+8': start_pb_signal,
         '<cmd>+<shift>+9': start_ui_signal,
-        '<cmd>+<shift>+0': end_ui_signal,
+        '<cmd>+<shift>+0': end_signal,
     })
     hotkeyListener.start()
     
     
     # Background processes
-    pb_process.start()
+    # pb_process.start()
     
     try:
         # Wait for the signal to trigger UI launch
@@ -95,11 +116,11 @@ def main():
                 signal = q.get()
                 logger.log(f"Received signal: {signal}")
                 if signal == "start_ui":
-                    if ui_process.is_alive():
-                        ui_process.terminate()
-                    if ui_process.pid:
-                        ui_process = Process(target=run_ui)
+                    ui_process = ResetProcess(ui_process)
                     ui_process.start()
+                elif signal == "start_pb":
+                    pb_process = ResetProcess(pb_process)
+                    pb_process.start()
                 elif signal == "end":
                     break
                 else:

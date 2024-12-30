@@ -32,3 +32,21 @@
    ```bash
    /path/to/your/environment/bin/python /path/to/SelfAutomate/run.py >> $LOG_DIR/sa.shell.log 2>&1 &
    ```
+
+## Example launch script
+
+```bash
+#!/bin/bash
+
+export LOG_DIR="$HOME/.self_dev"
+export PUSHBULLET_CONFIG_PATH="$DRIVE_PATH/DevelopmentConfigs/pushbullet_server_config.json"
+
+
+if [ ! -d "$LOG_DIR" ]; then
+   mkdir "$LOG_DIR"
+fi
+
+# Run the application
+echo "\n\nRunning SelfAutomate at $(date)\n" >> $LOG_DIR/sa.shell.log
+$HOME/miniforge3/envs/self-automate/bin/python $HOME/PersonalProjects/SelfAutomate/run.py >> $LOG_DIR/sa.shell.log 2>&1 &
+```
