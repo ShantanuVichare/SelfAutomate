@@ -8,41 +8,22 @@ from pynput import keyboard
 import pyperclip
 
 from dotenv import load_dotenv
+load_dotenv()
 
 from pushbullet import PushbulletWrapper, handle_push
 from utils import image_pil_to_base64
 import logger
-from ui import ScreenTextTaskApp
+from ui import ScreenTextTaskApp, ForceStartDialog
 
-load_dotenv()
-if (os.getenv("GROQ_API_KEY") is not None):
-    SELECTED_BACKEND = "groq"
-else:
-    SELECTED_BACKEND = "ollama"
-
-# SELECTED_BACKEND = "MOCK"
-
-if SELECTED_BACKEND == "groq":
-    from modelClients.groq import send_to_groq, COMMANDS
-    send_to_model = send_to_groq
-    SUPPORTED_COMMANDS = list(COMMANDS.keys())
-elif SELECTED_BACKEND == "ollama":
-    from modelClients.ollama import send_to_ollama, COMMANDS
-    send_to_model = send_to_ollama
-    SUPPORTED_COMMANDS = list(COMMANDS.keys())
-elif SELECTED_BACKEND == "MOCK":
-    send_to_model = lambda x, y: "MOCK_RESPONSE"
-    SUPPORTED_COMMANDS = ["MOCK_COMMAND"]
-else:
-    raise ValueError("Invalid backend selected with `SELECTED_BACKEND`. Please check supported backends.")
+from modelClients.main import Command, COMMANDS
 
 
-def run_model_command(cmd_idx, image):
-    command_key = SUPPORTED_COMMANDS[cmd_idx]
+
+def run_model_command(command: Command, image):
     encoded_image = image_pil_to_base64(image)
     
     # Choice of model backend
-    response = send_to_model(encoded_image, command_key)
+    response = command.execute(encoded_image=encoded_image)
     
     # Copy the response to the clipboard
     pyperclip.copy(response)
@@ -57,7 +38,7 @@ def run_pushbullet():
         print("Warning: PUSHBULLET_CONFIG_PATH not set in environment variables. Skipping Pushbullet startup!")
 
 def run_ui():
-    app = ScreenTextTaskApp(SUPPORTED_COMMANDS, run_model_command)
+    app = ScreenTextTaskApp(COMMANDS, run_model_command)
     app.mainloop()
     
     
@@ -82,7 +63,18 @@ def main():
     # logger.test_executability()
     # exit()
     
-    logger.mark_process_run()
+    if not logger.allow_running_instance(2):
+        
+        # user_confirmed = ForceStartDialog().confirm()
+        # if user_confirmed:
+        #     logger.log("Force starting SelfAutomate")
+        #     logger.mark_process_end()
+        #     logger.mark_process_run()
+        # else:
+        #     logger.log("Exiting as per user request")
+        #     exit()
+        logger.log("SelfAutomate is already running. Exiting...")
+        exit()
     logger.log("Starting SelfAutomate")
     
     # Init processes
@@ -107,9 +99,10 @@ def main():
     
     
     # Background processes
-    # pb_process.start()
+    # 
     
     try:
+        loop_delayer = 5
         # Wait for the signal to trigger UI launch
         while True:
             if not q.empty():
@@ -127,12 +120,18 @@ def main():
                     continue
             else:
                 time.sleep(0.2)
+            loop_delayer -= 1
+            if loop_delayer == 0:
+                loop_delayer = 5
+                if not logger.allow_running_instance():
+                    logger.log("SelfAutomate delayed termination")
+                    break
     finally:
         logger.log("Terminating SelfAutomate")
         if pb_process and pb_process.is_alive(): pb_process.terminate()
         if ui_process and ui_process.is_alive(): ui_process.terminate()
         hotkeyListener.stop()
-        logger.mark_process_end()
+        logger.terminate_running_instance()
         logger.log("Termination successful!")
     
 

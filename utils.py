@@ -4,8 +4,16 @@ import platform
 
 import base64
 from io import BytesIO
+import mss
+from PIL import Image
 
 import logger
+
+def grab_screenshot():
+    with mss.mss() as sct:
+        sct_img = sct.grab(sct.monitors[1])
+        return Image.frombytes("RGB", sct_img.size, sct_img.bgra, "raw", "BGRX")
+    
 
 def image_pil_to_base64(image_pil):
     buffered = BytesIO()

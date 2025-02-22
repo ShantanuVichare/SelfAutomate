@@ -1,14 +1,17 @@
+from typing import List
 import time
 
-import mss
 import tkinter as tk
-from tkinter import Canvas
+from tkinter import Canvas, simpledialog
 from PIL import ImageTk, Image
+
+from modelClients.main import Command
+from utils import grab_screenshot
 
 import logger
 
 class ScreenTextTaskApp:
-    def __init__(self, supported_commands, command_callback):
+    def __init__(self, supported_commands: List[Command], command_callback: callable):
         self.master = tk.Tk()
         self.master.title("Screen Text Task")
         self.supported_commands = supported_commands
@@ -34,9 +37,7 @@ class ScreenTextTaskApp:
         # Hide the root window drag bar and close button
         # self.master.overrideredirect(True)
 
-        with mss.mss() as sct:
-            sct_img = sct.grab(sct.monitors[1])
-            self.image = Image.frombytes("RGB", sct_img.size, sct_img.bgra, "raw", "BGRX")
+        self.image = grab_screenshot()
         
         self.render_canvas_display()
         
@@ -111,14 +112,14 @@ class ScreenTextTaskApp:
         button = tk.Button(self.master, text="Retry Selection", command=self.render_canvas_display)
         button.pack(pady=3, padx=3)
 
-        def get_command_callback(cmd_idx):
+        def get_command_callback(command: Command):
             def on_command_click():
-                logger.log(f"Running ScreenTask: {self.supported_commands[cmd_idx]}")
+                logger.log(f"Running ScreenTask: {command}")
                 self.clear_widgets()
                 self.master.title("Running...")
                 self.master.geometry(f"300x0+{int(self.screen_width/2 - 300/2)}+{int(self.screen_height/2 - 0/2)}")
                 self.master.update()
-                self.command_callback(cmd_idx, cropped_image)
+                self.command_callback(command, cropped_image)
                 # time.sleep(1)
                 self.master.title("Saved to clipboard! 📋")
                 self.master.update()
@@ -126,8 +127,8 @@ class ScreenTextTaskApp:
                 self.master.destroy()
             return on_command_click
         
-        for cmd_idx, command_text in enumerate(self.supported_commands):
-            button = tk.Button(self.master, text=command_text, command=get_command_callback(cmd_idx))
+        for command in self.supported_commands:
+            button = tk.Button(self.master, text=command, command=get_command_callback(command))
             button.pack(pady=3)
 
         display_image = cropped_image.resize((display_image_width, display_image_height),resample=Image.Resampling.LANCZOS)
@@ -136,3 +137,18 @@ class ScreenTextTaskApp:
         panel.photo = photo
         panel.pack(side="top", fill="none", expand="yes")
 
+    
+class ForceStartDialog():
+
+    def __init__(self):
+        self.root = tk.Tk()
+        self.root.withdraw()
+        
+
+    def confirm(self):
+        user_input = simpledialog.askstring("Force Start?", None, parent=self.root)
+        self.root.destroy()
+        if user_input is None:
+            return False
+        return True
+    
