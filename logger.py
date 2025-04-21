@@ -21,21 +21,22 @@ def getCurrentTime():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
-def check_pid_exists(pid):
+def check_pid_exists(pid_num: int) -> bool:
     """
     Checks if a process with the given PID exists.
 
     Args:
-        pid (int): The process ID to check.
+        pid_num (int): The process ID to check.
 
     Returns:
         bool: True if the process exists, False otherwise.
     """
-    if pid < 0:
-        return False
     try:
-        os.kill(pid, 0)  # Send signal 0, which does not kill the process
+        os.kill(pid_num, 0)  # Send signal 0, which does not kill the process
         return True
+    except ValueError:
+        # PID is not a valid integer
+        return False
     except ProcessLookupError:
         return False
     except PermissionError:
@@ -63,14 +64,16 @@ def allow_running_instance(time_delta: int = None) -> bool:
         access_runtime_config(RUNNING_FILE, run_config)
         return True
     
+    last_pid_num = int(last_pid)
+    
     if time_delta is not None:
         if current_time - last_check_time < time_delta:
             return False
-        while check_pid_exists(last_pid):
+        while check_pid_exists(last_pid_num):
             import time
             import signal
             # Terminate previous process
-            os.kill(last_pid, signal.SIGTERM)
+            os.kill(last_pid_num, signal.SIGTERM)
             # Sleep - to allow process to terminate
             time.sleep(1)
         # Update with current process
