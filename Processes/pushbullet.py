@@ -129,3 +129,11 @@ def handle_push(push):
 # pb_thread = pb.listen_push_notifications(handle_push)
 # pb_thread.join()
 
+
+def run_pushbullet():
+    pb_config_path = os.getenv("PUSHBULLET_CONFIG_PATH")
+    if pb_config_path is not None:
+        pb = PushbulletWrapper(config_path=pb_config_path)
+        pb.listen(handle_push, 60)
+    else:
+        print("Warning: PUSHBULLET_CONFIG_PATH not set in environment variables. Skipping Pushbullet startup!")

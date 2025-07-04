@@ -144,6 +144,15 @@ class ScreenTextTaskApp:
         panel.photo = photo
         panel.pack(side="top", fill="none", expand="yes")
 
+
+def run_screentext_task_ui():
+    app = ScreenTextTaskApp()
+    app.mainloop()
+
+
+
+
+
 class GenericTaskApp:
     '''
     This class renders a UI with a key-value pair dictionary input.
