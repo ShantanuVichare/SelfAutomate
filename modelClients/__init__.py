@@ -1,6 +1,10 @@
 
-from modelClients.groq import send_to_groq
-from modelClients.ollama import send_to_ollama
+from utils import image_pil_to_base64
+import pyperclip
+
+from ModelClients.groq import send_to_groq
+from ModelClients.ollama import send_to_ollama
+
 
 COMMANDS_MAP = {
     "DETECT_TEXT": {
@@ -62,6 +66,15 @@ class Command:
         }
         
         return self.model_call(context)
+    
+    def invoke_with_image(self, image):
+        """
+        Invoke the model with an image.
+        """
+        encoded_image = image_pil_to_base64(image)
+        response = self.execute(encoded_image=encoded_image)
+        # Copy the response to the clipboard
+        pyperclip.copy(response)
 
 
 # COMMANDS = {
@@ -73,3 +86,5 @@ COMMANDS = [
     Command(**value)
     for key, value in COMMANDS_MAP.items()
 ] 
+
+

@@ -5,17 +5,16 @@ import tkinter as tk
 from tkinter import Canvas, simpledialog
 from PIL import ImageTk, Image
 
-from modelClients.main import Command
 from utils import grab_screenshot
+from ModelClients import COMMANDS, Command
 
 import logger
 
 class ScreenTextTaskApp:
-    def __init__(self, supported_commands: List[Command], command_callback: callable):
+    def __init__(self, supported_commands: List[str] = COMMANDS):
         self.master = tk.Tk()
         self.master.title("Screen Text Task")
         self.supported_commands = supported_commands
-        self.command_callback = command_callback
 
         self.screen_padding = 0.1
         self.screen_width = self.master.winfo_screenwidth()
@@ -112,15 +111,23 @@ class ScreenTextTaskApp:
         button = tk.Button(self.master, text="Retry Selection", command=self.render_canvas_display)
         button.pack(pady=3, padx=3)
 
-        def get_command_callback(command: Command):
+        def get_model_command_callback(command: Command):
             def on_command_click():
                 logger.log(f"Running ScreenTask: {command}")
                 self.clear_widgets()
                 self.master.title("Running...")
                 self.master.geometry(f"300x0+{int(self.screen_width/2 - 300/2)}+{int(self.screen_height/2 - 0/2)}")
                 self.master.update()
-                self.command_callback(command, cropped_image)
-                # time.sleep(1)
+                try:
+                    # Invoke the model command with the cropped image
+                    command.invoke_with_image(cropped_image)
+                except Exception as e:
+                    logger.log_error(e, f"Error invoking command: {command.display_string}")
+                    self.master.title(f"Error")
+                    self.master.update()
+                    time.sleep(2)
+                    self.master.destroy()
+                    raise e
                 self.master.title("Saved to clipboard! 📋")
                 self.master.update()
                 time.sleep(1)
@@ -128,7 +135,7 @@ class ScreenTextTaskApp:
             return on_command_click
         
         for command in self.supported_commands:
-            button = tk.Button(self.master, text=command, command=get_command_callback(command))
+            button = tk.Button(self.master, text=command, command=get_model_command_callback(command))
             button.pack(pady=3)
 
         display_image = cropped_image.resize((display_image_width, display_image_height),resample=Image.Resampling.LANCZOS)
@@ -136,6 +143,35 @@ class ScreenTextTaskApp:
         panel = tk.Label(self.master, image=photo)
         panel.photo = photo
         panel.pack(side="top", fill="none", expand="yes")
+
+class GenericTaskApp:
+    '''
+    This class renders a UI with a key-value pair dictionary input.
+    The dict has key (Display String) and value (callback).
+    '''
+    def __init__(self, tasks: dict):
+        # Accept tasks as a dictionary: { display_text: callback }
+        self.tasks = tasks
+        self.master = tk.Tk()
+        self.master.title("Generic Task")
+        self.render_ui()
+    
+    def mainloop(self):
+        self.master.mainloop()
+    
+    def render_ui(self):
+        label = tk.Label(self.master, text="Select a Task")
+        label.pack(pady=10)
+        for display_text, callback in self.tasks.items():
+            button = tk.Button(self.master, text=display_text, 
+                               command=lambda cb=callback: self.on_task_selected(cb))
+            button.pack(pady=5)
+        cancel_btn = tk.Button(self.master, text="Cancel", command=self.master.destroy)
+        cancel_btn.pack(pady=10)
+    
+    def on_task_selected(self, callback):
+        self.master.destroy()
+        callback()
 
     
 class ForceStartDialog():

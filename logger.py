@@ -103,11 +103,17 @@ def log(*args):
     with open(file_path, "a") as file:
         print(f"[{PID}][{current_time}]:", *args, file=file)
 
+def log_debug(*args):
+    file_path = os.path.join(LOG_DIR, PROCESS_LOG_FILE)
+    current_time = getCurrentTime()
+    with open(file_path, "a") as file:
+        print(f"[{PID}][{current_time}]: [DEBUG] -", *args, file=file)
+
 def log_error(exception: Exception, *args):
     file_path = os.path.join(LOG_DIR, PROCESS_LOG_FILE)
     current_time = getCurrentTime()
     with open(file_path, "a") as file:
-        print(f"[{PID}][{current_time}][ERROR]:", *args, file=file)
+        print(f"[{PID}][{current_time}]: [ERROR] -", *args, file=file)
         print_exception(exception, file=file)
 
 def access_runtime_config(config_file_path, config: dict = None) -> dict:
